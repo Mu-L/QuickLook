@@ -20,6 +20,7 @@ using QuickLook.Common.Helpers;
 using QuickLook.Helpers;
 using QuickLook.NativeMethods;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -31,9 +32,6 @@ using Wpf.Ui.Violeta.Appearance;
 
 namespace QuickLook;
 
-/// <summary>
-///     Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
     public static readonly string LocalDataPath = SettingHelper.LocalDataPath;
@@ -50,11 +48,77 @@ public partial class App : Application
     private bool _cleanExit = true;
     private Mutex _isRunning;
 
+    static App()
+    {
+        // Explicitly set to PerMonitor to avoid being overridden by the system
+        if (SHCore.SetProcessDpiAwareness(SHCore.PROCESS_DPI_AWARENESS.PROCESS_PER_MONITOR_DPI_AWARE) is uint result)
+        {
+            Debug.WriteLine(
+                result == 0 ?
+                "DPI Awareness applied successfully" :
+                $"DPI Awareness manual setup failed. Error Code: {result}"
+            );
+        }
+    }
+
     protected override void OnStartup(StartupEventArgs e)
     {
-        AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+        // Exception handling events which are not caught in the Task thread
+        TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            ProcessHelper.WriteLog(((Exception)args.ExceptionObject).ToString());
+            try
+            {
+                ProcessHelper.WriteLog(e.Exception.ToString());
+                Wpf.Ui.Violeta.Controls.ExceptionReport.Show(e.Exception);
+            }
+            catch (Exception ex)
+            {
+                ProcessHelper.WriteLog(ex.ToString());
+            }
+            finally
+            {
+                e.SetObserved();
+            }
+        };
+
+        // Exception handling events which are not caught in UI thread
+        DispatcherUnhandledException += (_, e) =>
+        {
+            try
+            {
+                ProcessHelper.WriteLog(e.Exception.ToString());
+                Wpf.Ui.Violeta.Controls.ExceptionReport.Show(e.Exception);
+            }
+            catch (Exception ex)
+            {
+                ProcessHelper.WriteLog(ex.ToString());
+            }
+            finally
+            {
+                e.Handled = true;
+            }
+        };
+
+        // Exception handling events which are not caught in Non-UI thread
+        // Such as a child thread created by ourself
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            try
+            {
+                if (e.ExceptionObject is Exception ex)
+                {
+                    ProcessHelper.WriteLog(ex.ToString());
+                    Wpf.Ui.Violeta.Controls.ExceptionReport.Show(ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                ProcessHelper.WriteLog(ex.ToString());
+            }
+            finally
+            {
+                // Ignore
+            }
         };
 
         // Initialize MessageBox patching

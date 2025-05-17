@@ -69,12 +69,12 @@ public partial class ViewerWindow : INotifyPropertyChanged
             case nameof(ContextObject.Title):
                 if (!string.IsNullOrWhiteSpace(ContextObject.Title))
                 {
-                    Dispatcher.BeginInvoke(new Action(() =>
+                    Dispatcher?.Invoke(() =>
                     {
-                        ShowInTaskbar = true;
+                        // We can not update the Title when ShowInTaskbar is false
+                        // https://github.com/QL-Win/QuickLook/issues/1628
                         Title = $"QuickLook - {ContextObject.Title}";
-                        ShowInTaskbar = false;
-                    }));
+                    });
                 }
                 break;
 
