@@ -31,7 +31,6 @@ public class Plugin : IViewer
         ".dll", ".ax", ".drv", ".vxd",
         ".mui", ".mun",
         ".tlb",
-        ".msi",
         ".efi", ".mz",
     ];
 
@@ -63,7 +62,6 @@ public class Plugin : IViewer
         _ip.Tag = context;
 
         context.ViewerContent = _ip;
-        context.Title = $"{Path.GetFileName(path)}";
         context.IsBusy = false;
     }
 

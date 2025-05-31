@@ -20,6 +20,7 @@ using QuickLook.Common.Helpers;
 using QuickLook.Common.Plugin;
 using QuickLook.Helpers;
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
@@ -30,9 +31,6 @@ using Size = System.Windows.Size;
 
 namespace QuickLook;
 
-/// <summary>
-///     Interaction logic for ViewerWindow.xaml
-/// </summary>
 public partial class ViewerWindow : Window
 {
     private Size _customWindowSize = Size.Empty;
@@ -106,6 +104,15 @@ public partial class ViewerWindow : Window
         buttonPin.ToolTip = TranslationHelper.Get("MW_PreventClosing");
         buttonOpenWith.ToolTip = TranslationHelper.Get("MW_OpenWithMenu");
         buttonShare.ToolTip = TranslationHelper.Get("MW_Share");
+    }
+
+    public new void Close()
+    {
+        // Workaround to prevent DPI jump animation when closing window in .NET Framework 4.6.2
+        // Safe to remove this line if QuickLook no longer targets .NET Framework 4.6.2
+        Hide();
+
+        base.Close();
     }
 
     public override void OnApplyTemplate()
